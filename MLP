@@ -1,0 +1,134 @@
+import keras
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.decomposition import PCA
+from sklearn import preprocessing
+from tensorflow import keras
+from keras.models import Sequential
+from tensorflow.keras import layers
+
+bitcoin_data = pd.read_csv("BitcoinHeistData.csv")
+
+bitcoin_data.info()
+
+bitcoin_data.label.value_counts()
+
+bitcoin_data.head()
+
+bitcoin_mod = bitcoin_data
+
+# create labels for both label and address
+
+
+label_encoder = LabelEncoder()
+bitcoin_mod.label = label_encoder.fit_transform(bitcoin_mod.label)
+bitcoin_mod.address = label_encoder.fit_transform(bitcoin_mod.address)
+
+bitcoin_mod.head()
+
+bitcoin_mod.year.value_counts()
+# the year ranges from 2011 to 2018. Year could be useful because
+# it can signify when the ransomeware's were the most active
+
+bitcoin_mod.sample(20)
+
+bitcoin_mod.describe()
+
+bitcoin_mod.address.value_counts()
+
+fig = plt.figure(figsize=(40, 40))
+ax = fig.gca()
+bitcoin_mod.hist(ax=ax)
+plt.show()
+
+# first we'll need to normalize the dataset
+normal = bitcoin_data
+normalized_bitcoin_data = preprocessing.normalize(normal)
+
+# make it into a dataframe
+columns = bitcoin_data.columns
+normalized_bitcoin_df = pd.DataFrame(normalized_bitcoin_data, columns=columns)
+# start out splitting the data
+xtrain = normalized_bitcoin_df
+labels = normalized_bitcoin_df.drop('label', axis=1)
+
+# split the data into train, validate, test
+# The validation data is selected from the last samples in the x and y data provided, before shuffling
+x, x_validate, y, y_validate = train_test_split(xtrain, labels, test_size=0.2, train_size=0.8)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.12, train_size=0.88)
+
+print("X HERE SHAPE")
+print(x.shape)
+print("x_test HERE SHAPE")
+print(x_test.shape)
+print("x_validate HERE SHAPE")
+print(x_validate.shape)
+print("X x_train SHAPE")
+print(x_train.shape)
+
+print("y HERE SHAPE")
+print(y.shape)
+print("y_test HERE SHAPE")
+print(y_test.shape)
+print("X y_validate SHAPE")
+print(y_validate.shape)
+print("X y_train SHAPE")
+print(y_train.shape)
+
+model = Sequential()
+model.add(layers.Dense(64, activation='relu', kernel_initializer='glorot_normal', bias_initializer='zeros', input_shape=(128,)))
+model.add(layers.BatchNormalization())
+model.add(layers.Dense(32, activation='relu', kernel_initializer='glorot_normal', bias_initializer='zeros'))
+model.add(layers.BatchNormalization())
+model.add(layers.Dense(32, activation='relu', kernel_initializer='glorot_normal', bias_initializer='zeros'))
+model.add(layers.Dense(32, activation='relu', kernel_initializer='glorot_normal', bias_initializer='zeros'))
+model.add(layers.Dropout(0.4))
+model.add(layers.Dense(10, activation='softmax'))
+optimizer = keras.optimizers.RMSprop(lr=0.0005, rho=0)
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
+print(model.output_shape)
+print(model.summary())
+
+model.fit(x_train, y_train, epochs=20, batch_size=128)
+
+#score = model.evaluate(x_test, y_test, batch_size=128)
+
+# Y_predict = model.predict(x_test)
+# print(score)
+
+
+'''
+# Check and see the value of all 9 principal components
+from sklearn.decomposition import PCA
+pca = PCA(n_components = 9)
+pca.fit(normalized_bitcoin_mod)
+bitcoin_mod_pca = pca.transform(normalized_bitcoin_mod)
+variance = np.var(bitcoin_mod_pca, axis = 0)
+variance_ratio = variance/np.sum(variance)
+print("Variance_ratio:",variance_ratio)
+print("Pca.Components:",pca.components_)
+print("Explained Varaince:",pca.explained_variance_)
+
+
+plt.figure(figsize = (10,10))
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('Components')
+plt.ylabel('Explained Variance')
+plt.xticks(range(bitcoin_mod.shape[1]), bitcoin_mod.columns)
+plt.show()
+
+
+
+corr_matrix = bitcoin_mod.corr()
+# plot of the pearson corr matrix as well so that we can also understand how the data correlates with labels
+f = plt.figure(figsize=(16, 16))
+plt.matshow(corr_matrix, fignum=f.number)
+plt.xticks(range(bitcoin_mod.shape[1]), bitcoin_mod.columns)
+plt.yticks(range(bitcoin_mod.shape[1]), bitcoin_mod.columns)
+cb = plt.colorbar()
+plt.title('Pearson Correlation Matrix', fontsize=16);
+plt.show()
+'''
